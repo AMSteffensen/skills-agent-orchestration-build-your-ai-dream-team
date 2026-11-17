@@ -1,0 +1,28 @@
+{
+  "projects": [
+    {
+      "name": "Contributor Portal",
+      "owner": "Mona Lisa",
+      "status": "In progress",
+      "recentActivity": "Published the first contributor onboarding draft yesterday.",
+      "priority": "High",
+      "summary": "A clearer starting point for new contributors and maintainers."
+    },
+    {
+      "name": "Release Readiness",
+      "owner": "Alex Chen",
+      "status": "On track",
+      "recentActivity": "Completed the release checklist review this week.",
+      "priority": "Medium",
+      "summary": "A shared view of the checks that keep releases predictable."
+    },
+    {
+      "name": "Accessibility Refresh",
+      "owner": "Priya Shah",
+      "status": "Needs attention",
+      "recentActivity": "Logged three keyboard-navigation improvements for review.",
+      "priority": "High",
+      "summary": "Improving inclusive navigation and readable project experiences."
+    }
+  ]
+}

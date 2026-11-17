@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="dashboard">
+        <p class="eyebrow">Team overview</p>
+        <h1>Project Pulse</h1>
+        <p class="intro">A quick, contributor-friendly view of what the team is moving forward.</p>
+      </div>
+    </header>
+
+    <main class="dashboard" id="main-content">
+      <section aria-labelledby="projects-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Current work</p>
+            <h2 id="projects-heading">Projects</h2>
+          </div>
+          <p id="project-count" class="project-count" aria-live="polite"></p>
+        </div>
+
+        <div id="state-message" class="state-message" role="status" aria-live="polite">
+          Loading projects…
+        </div>
+        <div id="project-list" class="project-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script>
+      const projectList = document.querySelector("#project-list");
+      const stateMessage = document.querySelector("#state-message");
+      const projectCount = document.querySelector("#project-count");
+
+      function showState(message, isError = false) {
+        stateMessage.textContent = message;
+        stateMessage.hidden = false;
+        stateMessage.classList.toggle("is-error", isError);
+      }
+
+      function normalizeToken(value) {
+        return String(value ?? "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      function normalizeStatus(value) {
+        const status = normalizeToken(value);
+        const aliases = {
+          "on-track": "active",
+          "needs-attention": "at-risk"
+        };
+        return aliases[status] || status;
+      }
+
+      function isValidProject(project) {
+        const requiredFields = ["name", "owner", "status", "recentActivity", "priority"];
+        return project !== null &&
+          typeof project === "object" &&
+          requiredFields.every((field) =>
+            typeof project[field] === "string" && project[field].trim() !== ""
+          );
+      }
+
+      function addDetail(card, label, value, className, dataAttribute, normalizedValue) {
+        const detail = document.createElement("div");
+        detail.className = "project-detail";
+
+        const heading = document.createElement("dt");
+        heading.textContent = label;
+        const content = document.createElement("dd");
+        content.textContent = value;
+        if (className) {
+          content.className = className;
+        }
+        if (dataAttribute) {
+          content.setAttribute(dataAttribute, normalizedValue);
+        }
+
+        detail.append(heading, content);
+        card.append(detail);
+      }
+
+      function renderProjects(projects) {
+        projectList.replaceChildren();
+        projectCount.textContent = `${projects.length} ${projects.length === 1 ? "project" : "projects"}`;
+
+        projects.forEach((project) => {
+          const card = document.createElement("article");
+          card.className = "project-card";
+
+          const title = document.createElement("h3");
+          title.textContent = project.name;
+          card.append(title);
+
+          if (project.summary) {
+            const summary = document.createElement("p");
+            summary.className = "project-summary";
+            summary.textContent = project.summary;
+            card.append(summary);
+          }
+
+          const details = document.createElement("dl");
+          addDetail(details, "Owner", project.owner);
+          addDetail(
+            details,
+            "Status",
+            project.status,
+            "status-badge",
+            "data-status",
+            normalizeStatus(project.status)
+          );
+          addDetail(details, "Recent activity", project.recentActivity);
+          addDetail(
+            details,
+            "Priority",
+            project.priority,
+            "priority-badge",
+            "data-priority",
+            normalizeToken(project.priority)
+          );
+          card.append(details);
+          projectList.append(card);
+        });
+      }
+
+      async function loadProjects() {
+        try {
+          const response = await fetch("project-data.json");
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          const data = await response.json();
+          if (!data || !Array.isArray(data.projects)) {
+            throw new Error("Project data must contain a projects array.");
+          }
+
+          if (data.projects.length === 0) {
+            projectCount.textContent = "0 projects";
+            projectList.replaceChildren();
+            showState("There are no projects to display yet.");
+            return;
+          }
+
+          if (!data.projects.every(isValidProject)) {
+            throw new Error("Project data contains an invalid project record.");
+          }
+
+          renderProjects(data.projects);
+          stateMessage.hidden = true;
+        } catch (error) {
+          projectList.replaceChildren();
+          projectCount.textContent = "";
+          showState("Project data could not be loaded. Please try again later.", true);
+          console.error("Unable to load project data:", error);
+        }
+      }
+
+      loadProjects();
+    </script>
+  </body>
+</html>
